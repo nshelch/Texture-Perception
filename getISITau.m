@@ -28,9 +28,9 @@ for nn = 1:numNeurons
                 tauCounts(nn,tt,ii) = sum(isiValue == tau); % Subtracting 1 because the count includes the initial spike????
             end
         end
-    end
+    end % texture loop
     
-end
+end % neuron loop
 
 
 end

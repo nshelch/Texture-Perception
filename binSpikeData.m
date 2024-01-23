@@ -1,31 +1,32 @@
-function spikeTrain = binSpikeData(cData, binSize, timeStart, trialDur)
+function spikeTrain = binSpikeData(data, startTime, poi, binRes)
 
-numNeurons = length(cData.neuron);
-numTextures = length(cData.neuron(1).texture);
-numReps = length(cData.neuron(1).texture(1).rep);
-numData = length(0:binSize:trialDur);
+numNeurons = size(data.neuron, 2);
+numTextures = size(data.neuron(1).texture, 2);
+numReps = size(data.neuron(1).texture(1).rep, 2);
+numData = length(0:binRes:poi);
 
-spikeTrain = zeros(numNeurons, numTextures, (numData - 1) * numReps);
+spikeTrain = zeros(numNeurons, numTextures, numReps, numData - 1);
 for nn = 1:numNeurons
     for tt = 1:numTextures
-        tmp = cell(1, numReps);
         for rr = 1:numReps
             
-            spikesInMs = cData.neuron(nn).texture(tt).rep{rr} * 1000;
-            timeEnd = timeStart + trialDur;
-            validSpikes = spikesInMs > timeStart + 1 & spikesInMs < timeEnd;
-            spikeTimes = spikesInMs(validSpikes) - timeStart;
-            binnedSpikeTrain = histcounts(spikeTimes, 0:binSize:trialDur);
-            tmp{rr} = binnedSpikeTrain;
+            spikesInMs = data.neuron(nn).texture(tt).rep{rr} * 1000;
+            timeEnd = startTime + poi;
+            validSpikes = spikesInMs >= startTime & spikesInMs <= timeEnd;
+            spikeTimes = spikesInMs(validSpikes) - startTime; % Align to 0
+            binnedSpikeTrain = histcounts(spikeTimes, 0:binRes:poi); % Bin the spike times 
+
+            % Binarize the data (CHECK THIS WAS DONE CORRECTLY (SINCE I
+            % MOVED SHIT SO QUICKLY BEFORE THE MEETING)
+            binarizedSpikes = binnedSpikeTrain > 1;
+            binnedSpikeTrain(binarizedSpikes) = 1;
+            spikeTrain(nn, tt, rr, :) = binnedSpikeTrain;
+
             
-        end
-        binnedSpikes = cell2mat(tmp);
-        binarizedSpikes = binnedSpikes > 1;
-        binnedSpikes(binarizedSpikes) = 1;
-        spikeTrain(nn, tt, :) = binnedSpikes;
+        end % rep loop
         
-    end
-end
+    end % texture loop
+end % neuron loop
 
 end
 
