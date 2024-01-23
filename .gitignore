@@ -1,0 +1,10 @@
+/Data
+/Figures
+/Documents
+*.asv
+test.m
+
+
+Utils/
+
+*.mat
