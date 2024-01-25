@@ -5,14 +5,14 @@ clear; clc;
 % Folder locations (Move this into a startup script)
 hostEnv = getenv('computername');
 if strcmpi(hostEnv, 'DESKTOP-LEG2SE6')
-    pathLoc = 'C:/Users/nshel/';
+    pathLoc = 'C:/Users/nshel/Box/BensmaiaLab/';
 elseif strcmpi(hostEnv, 'OBA-PC-01')
-    pathLoc = 'C:/Users/somlab/';
+    pathLoc = 'C:/Users/somlab/Box/BensmaiaLab/';
 elseif strcmpi(hostEnv, 'DESKTOP-FB47T9U')
-    pathLoc = 'C:/Users/nshelch/';
+    pathLoc = 'C:/Users/nshelch/Box/BensmaiaLab (Natalya Shelchkova)/';
 end
 
-dataLoc = fullfile(pathLoc, '/Box/BensmaiaLab (Natalya Shelchkova)/Texture Perception/Data/');
+dataLoc = fullfile(pathLoc, 'Texture Perception/Data/');
 
 % Load Data
 if exist(fullfile(dataLoc, 'cData.mat'), 'file')
@@ -81,53 +81,41 @@ isiParams.tau = isiTau; isiParams.maxTauRate = maxTauCount;
 
 %% Info calculations using binarized spike trains
 % TODO: Implement integration time window here
+
 spikeTrain = binSpikeData(cData, startTime, poiDur, spikeTrainRes);
 
-for ii = 1:length(intTimeWindow)
+for tt = 1:length(intTimeWindow)
+
     % Spike Count
-    for sl = 1:length(snippetLength)
-        numBins = snippetLength(sl) / spikeTrainRes;
-        
-        % Spike Count Stuff
-        [spikeCount] = getSpikeCounts(spikeTrain, numBins); % Outputs spike count not p(x|t)
-        
-        tmpSpikes = calculateMutualInformation(spikeCount, 0:numBins, convFactor);
-        miNeural.SpikeCount(sl, :) = tmpSpikes.mutualInfo;
-        entNeural.SpikeCount(sl, :) = tmpSpikes.entropy;
-        jointNeural.SpikeCount{sl} = tmpSpikes.jointCount;
-        rate.SpikeCount(sl, :, :) = mean(spikeCount, 3);
-        %         [distMetric.SpikeCount.pcDJS(sl, :, :, :), distMetric.SpikeCount.pcRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(pcIdx == 1), textIdx, :), humanScores, 1);
-        %         [distMetric.SpikeCount.saDJS(sl, :, :, :), distMetric.SpikeCount.saRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(saIdx == 1), textIdx, :), humanScores, 0);
-        
-    end % snippet loop
-    
-    % ISI
+    [spikeCount] = getSpikeCount(spikeTrain, intTimeWindow(tt)); % Outputs spike count not p(x|t)
+
+    tmpSpikes = calculateMutualInformation(spikeCount, 0:numBins, convFactor);
+    miNeural.SpikeCount(sl, :) = tmpSpikes.mutualInfo;
+    entNeural.SpikeCount(sl, :) = tmpSpikes.entropy;
+    jointNeural.SpikeCount{sl} = tmpSpikes.jointCount;
+    rate.SpikeCount(sl, :, :) = mean(spikeCount, 3);
+    %         [distMetric.SpikeCount.pcDJS(sl, :, :, :), distMetric.SpikeCount.pcRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(pcIdx == 1), textIdx, :), humanScores, 1);
+    %         [distMetric.SpikeCount.saDJS(sl, :, :, :), distMetric.SpikeCount.saRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(saIdx == 1), textIdx, :), humanScores, 0);
+
+    % ISI TODO
     isiEdges = 0:isiRes:isiCutoff; % 0:1:120
-    
-    [isiCount] = getISITau(spikeTrain, snippetLength(sl), isiTau(tt));
+
+    [isiCount] = getISITau(spikeTrain, intTimeWindow(tt));
     tmpISI = calculateMutualInformation(isiCount, NaN, convFactor);
     miNeural.ISI(ll, :) = tmpISI.mutualInfo;
     entNeural.ISI(ll, :) = tmpISI.entropy;
     jointNeural.ISI{ll} = tmpISI.jointCount;
-    
-    
+
+
     % Spike Interval Code (was ISI Tau)
-    for sl = 1:length(snippetLength)
-        fprintf('Calculating Tau and Spike Count for Snippet Length %i/%i\n', sl, length(snippetLength));
-        
-        % Calculate ISI Tau
-        for tt = 1:length(isiTau)
-            fprintf('Calculating Tau %i/%i\n', tt, length(isiTau));
-            [spikeIntCount] = getISITau(spikeTrain, snippetLength(sl), isiTau(tt));
-            
-            tmpTauIsi = calculateMutualInformation(spikeIntCount, 0:maxTauCount(tt), convFactor);
-            miNeural.TauIsi(tt, :) = tmpTauIsi.mutualInfo;
-            entNeural.TauIsi(tt, :) = tmpTauIsi.entropy;
-            jointNeural.TauIsi{tt} = tmpTauIsi.jointCount;
-            rate.isiTau(tt, :) = mean(squeeze(mean(spikeIntCount, 2)), 2);
-        end
-    end
-    
+    [spikeIntCount] = getISITau(oldSpikeTrain, intTimeWindow(tt));
+
+    tmpTauIsi = calculateMutualInformation(spikeIntCount, 0:maxTauCount(tt), convFactor);
+    miNeural.TauIsi(tt, :) = tmpTauIsi.mutualInfo;
+    entNeural.TauIsi(tt, :) = tmpTauIsi.entropy;
+    jointNeural.TauIsi{tt} = tmpTauIsi.jointCount;
+    rate.isiTau(tt, :) = mean(squeeze(mean(spikeIntCount, 2)), 2);
+
 end % integration time window loop
 
 if saveData
