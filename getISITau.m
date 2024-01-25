@@ -23,9 +23,9 @@ for nn = 1:numNeurons
         
         for ii = 1:size(curST, 1)
             spikeIdx = find(curST(ii,:) == 1);
-            isiValue = diff(spikeIdx);
-            if ~isempty(isiValue) && length(isiValue) > 1
-                tauCounts(nn,tt,ii) = sum(isiValue == tau); % Subtracting 1 because the count includes the initial spike????
+            spikeIntValue = diff(spikeIdx);
+            if ~isempty(spikeIntValue) && length(spikeIntValue) > 1
+                tauCounts(nn,tt,ii) = sum(spikeIntValue == tau); 
             end
         end
     end % texture loop
