@@ -8,7 +8,9 @@ function info = calculateMutualInformation(data, binValues, tau)
 % tau: time resolution of the bins -> used to convert from bits/bin to
 % bits/second
 
-numNeurons = size(data, 1); numLabels = size(data, 2);
+numNeurons = size(data, 1); 
+numTextures = size(data, 2);
+
 if ~isnan(binValues)
     numBins = length(binValues);
 else
@@ -18,12 +20,12 @@ end
 info.convertBinsToSeconds = (1000 / tau); % conversion factor to transform info from bits/bin to bits/second
 
 % Get label info/entropy
-info.probTexture = 1/numLabels; % P(t)
-info.entropyTexture = log2(numLabels) * info.convertBinsToSeconds; % bits/second
+info.probTexture = 1/numTextures; % P(t)
+info.entropyTexture = log2(numTextures) * info.convertBinsToSeconds; % bits/second
 
 % Set up joint and global counters
-jointCount = zeros(numNeurons, numLabels, numBins);
-probOfXGivenTexture = zeros(numNeurons, numLabels, numBins);
+jointCount = zeros(numNeurons, numTextures, numBins);
+probOfXGivenTexture = zeros(numNeurons, numTextures, numBins);
 
 pbar = fprintf('Calculating Mutual Information for neuron 0/%i \n', numNeurons); % progress bar
 
@@ -34,7 +36,7 @@ for nn = 1:numNeurons
     fprintf(repmat('\b', 1, pbar))
     pbar = fprintf('Calculating Mutual Information for neuron %i/%i \n', nn, numNeurons);
     
-    for tt = 1:numLabels
+    for tt = 1:numTextures
         % parfor(tt = 1:length(textures), 2) % Useful if calculations are
         % going slowly
         
