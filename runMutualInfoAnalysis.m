@@ -89,7 +89,7 @@ for tt = 1:length(intTimeWindow)
     % Spike Count
     [spikeCount] = getSpikeCount(spikeTrain, intTimeWindow(tt)); % Outputs spike count not p(x|t)
 
-    tmpSpikes = calculateMutualInformation(spikeCount, 0:numBins, convFactor);
+    tmpSpikes = calculateMutualInformation(spikeCount, 0:intTimeWindow(tt), convFactor);
     miNeural.SpikeCount(sl, :) = tmpSpikes.mutualInfo;
     entNeural.SpikeCount(sl, :) = tmpSpikes.entropy;
     jointNeural.SpikeCount{sl} = tmpSpikes.jointCount;
@@ -97,23 +97,17 @@ for tt = 1:length(intTimeWindow)
     %         [distMetric.SpikeCount.pcDJS(sl, :, :, :), distMetric.SpikeCount.pcRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(pcIdx == 1), textIdx, :), humanScores, 1);
     %         [distMetric.SpikeCount.saDJS(sl, :, :, :), distMetric.SpikeCount.saRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(saIdx == 1), textIdx, :), humanScores, 0);
 
-    % ISI TODO
-    isiEdges = 0:isiRes:isiCutoff; % 0:1:120
-
-    [isiCount] = getISITau(spikeTrain, intTimeWindow(tt));
-    tmpISI = calculateMutualInformation(isiCount, NaN, convFactor);
-    miNeural.ISI(ll, :) = tmpISI.mutualInfo;
-    entNeural.ISI(ll, :) = tmpISI.entropy;
-    jointNeural.ISI{ll} = tmpISI.jointCount;
-
 
     % Spike Interval Code (was ISI Tau)
-    [spikeIntCount] = getISITau(oldSpikeTrain, intTimeWindow(tt));
+    [spikeIntCount] = getSpikeIntervalCount(spikeTrain, intTimeWindow(tt));
+    
+    % How does max ISI count play a role here?
 
-    tmpTauIsi = calculateMutualInformation(spikeIntCount, 0:maxTauCount(tt), convFactor);
-    miNeural.TauIsi(tt, :) = tmpTauIsi.mutualInfo;
-    entNeural.TauIsi(tt, :) = tmpTauIsi.entropy;
-    jointNeural.TauIsi{tt} = tmpTauIsi.jointCount;
+
+    tmpSpikeInt = calculateMutualInformation(spikeIntCount, 0:maxTauCount(tt), convFactor);
+    miNeural.TauIsi(tt, :) = tmpSpikeInt.mutualInfo;
+    entNeural.TauIsi(tt, :) = tmpSpikeInt.entropy;
+    jointNeural.TauIsi{tt} = tmpSpikeInt.jointCount;
     rate.isiTau(tt, :) = mean(squeeze(mean(spikeIntCount, 2)), 2);
 
 end % integration time window loop
