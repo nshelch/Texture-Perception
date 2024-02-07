@@ -1,4 +1,4 @@
-function [spikeCount] = getSpikeCount(spikeTrain, intTime)
+function [spikeCount] = getSpikeCount(spikeTrain, snippetLength)
 % TODO: rename intTime to better represent what it actually means
 % TODO: Should I have this output p(x|t) instead of spike counts (with
 % p(x|t) calculated in the calculateMutualInformation fx)
@@ -7,7 +7,7 @@ function [spikeCount] = getSpikeCount(spikeTrain, intTime)
 numNeurons = size(spikeTrain, 1);
 numTextures = size(spikeTrain, 2);
 numReps = size(spikeTrain, 3);
-numDataPerRep = size(spikeTrain, 4) / intTime;
+numDataPerRep = size(spikeTrain, 4) / snippetLength;
 numDataPerNeuron = numDataPerRep * numReps;
 
 if ~(floor(numDataPerRep) == ceil(numDataPerRep))
@@ -24,7 +24,7 @@ for nn = 1:numNeurons
         tmpSpikeCount = cell(1, numReps);
         for rr = 1:numReps
             % Reshaping the binarized spike train for easier spike counting
-            spikeMatrix = reshape(spikeTrain(nn, tt, rr, :), [intTime, numDataPerRep])';
+            spikeMatrix = reshape(spikeTrain(nn, tt, rr, :), [snippetLength, numDataPerRep])';
             tmpSpikeCount{rr} = sum(spikeMatrix, 2);
         end % rep loop
         spikeCount(nn, tt, :) = vertcat(tmpSpikeCount{:});
