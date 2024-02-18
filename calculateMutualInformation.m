@@ -41,7 +41,11 @@ for nn = 1:numNeurons
         % going slowly
         
         % Get the binned data/joint counts from each neuron
-        tmp = squeeze(data(nn, tt, :));
+        if length(size(data)) == 4
+            tmp = squeeze(data(nn, tt, :, :));
+        else
+            tmp = squeeze(data(nn, tt, :));
+        end
         
         % Get p(x|t) for each neuron
         if ~isnan(binValues) % if the data is binned
@@ -82,7 +86,7 @@ function [probOfX, countOfX] = calculateProbOfX(x, binValues)
 countOfX = zeros(1, length(binValues));
 
 % Get a matrix of the words which actually occurred
-uniqueX = unique(x);
+uniqueX = unique(x, 'rows');
 
 % Get the indices of these words so you don't have to search through the
 % entire vector

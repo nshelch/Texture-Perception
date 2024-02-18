@@ -36,42 +36,65 @@ convFactor = 1000; % Conversion factor from bits/bin to bits/sec in MI calculati
 
 % Spike Train Params
 spikeTrainRes = 1; % Binning resolution of the spike train (ms)
-snippetLength = [2:5]; %[2, 5, 10, 20, 50, 100]; % ms
+snippetLength = [2:6,8,10]; % ms
 stParams.snippetLength = snippetLength; stParams.spikeTrainRes = spikeTrainRes;
 
-%% Processing Loop
-% 1/23/24 Notes: Since not doing tip to tail stitching, need to think about
-% restructuring the way I organize my data and its impact on these
-% calculations --> impacts the getXX functions not
-% calculateMutualInformation (since that already takes joint distributions
-% as input)
+%% Analysis start
 
-% Info calculations using binarized spike trains
+% Binarize the spike train
+spikeTrain = binSpikeData(cData, startTime, poiDur, spikeTrainRes);
 
-% spikeTrain = binSpikeData(cData, startTime, poiDur, spikeTrainRes);
-% 
-% for tt = 1:length(snippetLength)
-%     % Spike Count
-%     [spikeCount] = getSpikeCount(spikeTrain, snippetLength(tt)); % Outputs spike count not p(x|t)
-% 
-%     tmpSpikes = calculateMutualInformation(spikeCount, 0:snippetLength(tt), convFactor);
-%     miNeural.SpikeCount(tt, :) = tmpSpikes.mutualInfo;
-%     entNeural.SpikeCount(tt, :) = tmpSpikes.entropy;
-%     jointNeural.SpikeCount{tt} = tmpSpikes.jointCount;
-%     rate.SpikeCount(tt, :, :) = mean(spikeCount, 3);
-%     %         [distMetric.SpikeCount.pcDJS(sl, :, :, :), distMetric.SpikeCount.pcRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(pcIdx == 1), textIdx, :), humanScores, 1);
-%     %         [distMetric.SpikeCount.saDJS(sl, :, :, :), distMetric.SpikeCount.saRsq(sl, :)] = djsAnalysis(tmpSpikes.jointCount(find(saIdx == 1), textIdx, :), humanScores, 0);
-% end
+for sl = 1:length(snippetLength)
 
-for tt = 1:length(snippetLength)
-    % Spike Interval Code (was ISI Tau)
-    [spikeIntCount] = getSpikeIntervalCount(spikeTrain, snippetLength(tt));
-    tmpSpikeInt = calculateMutualInformation(spikeIntCount, NaN, convFactor);
-    miSpikeInt(tt, :) = tmpSpikeInt.mutualInfo;
-    entSpikeInt(tt, :) = tmpSpikeInt.entropy;
-    jointSpikeInt{tt} = tmpSpikeInt.jointCount;
-    rateSpikeInt(tt, :) = mean(squeeze(mean(spikeIntCount, 2)), 2);
-end % integration time window loop
+    %%% Spike Count
+    [spikeCount] = getSpikeCount(spikeTrain, snippetLength(sl)); % Outputs spike count not p(x|t)
+    tmpSpikes = calculateMutualInformation(spikeCount, 0:snippetLength(sl), convFactor);
+    
+    miNeural.SpikeCount(sl, :) = tmpSpikes.mutualInfo;
+    entNeural.SpikeCount(sl, :) = tmpSpikes.entropy;
+    jointNeural.SpikeCount{sl} = tmpSpikes.jointCount;
+    rate.SpikeCount(sl, :, :) = mean(spikeCount, 3);
+
+
+    %%% Spike Interval Code (single spikes assigned the same label)
+    [spikeIntCount, spikeIntTable] = getSpikeIntervalCount(spikeTrain, snippetLength(sl), 0);
+    tmpSpikeInt = calculateMutualInformation(spikeIntCount, unique(spikeIntTable.Label), convFactor);
+
+    miNeural.SpikeInt(sl, :) = tmpSpikeInt.mutualInfo;
+    entNeural.SpikeInt(sl, :) = tmpSpikeInt.entropy;
+    jointNeural.SpikeInt{sl} = tmpSpikeInt.jointCount;
+    rate.SpikeInt(sl, :) = mean(squeeze(mean(spikeIntCount, 2)), 2);
+
+
+    %%% Spike Interval Code (single spikes assigned different labels)
+    [spikeIntCount, spikeIntTable] = getSpikeIntervalCount(spikeTrain, snippetLength(sl), 1);
+    tmpSpikeInt = calculateMutualInformation(spikeIntCount, spikeIntTable.Label, convFactor);
+
+    miNeural.SplitSpikeInt(sl, :) = tmpSpikeInt.mutualInfo;
+    entNeural.SplitSpikeInt(sl, :) = tmpSpikeInt.entropy;
+    jointNeural.SplitSpikeInt{sl} = tmpSpikeInt.jointCount;
+    rate.SplitSpikeInt(sl, :) = mean(squeeze(mean(spikeIntCount, 2)), 2);
+
+
+    %%% Words
+    if snippetLength(sl) <= 6 % max snippet length given the amount of data we have
+        [wordCount, wordLabels] = getWords(spikeTrain, snippetLength(sl));
+        tmpWords = calculateMutualInformation(wordCount, wordLabels, convFactor);
+
+        miNeural.Words(sl, :) = tmpWords.mutualInfo;
+        entNeural.Words(sl, :) = tmpWords.entropy;
+        jointNeural.Words{sl} = tmpWords.jointCount;
+        rate.Words(sl, :) = mean(squeeze(mean(wordCount, 2)), 2);
+    else
+        miNeural.Words(sl, :) = NaN;
+        entNeural.Words(sl, :) = NaN;
+        jointNeural.Words{sl} = NaN;
+        rate.Words(sl, :) = NaN;
+    end
+
+end % snippet length
+
+
 % 
 % if saveData
 %     save('./Data/mostRecentCalculation.mat', 'miNeural', 'entNeural', 'jointNeural', 'distMetric', 'stParams', 'isiParams', 'neuronType', 'pcIdx', 'saIdx', 'isiHist', 'spikeTrain')
