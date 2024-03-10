@@ -1,3 +1,22 @@
+
+% Folder locations (Move this into a startup script)
+hostEnv = getenv('computername');
+if strcmpi(hostEnv, 'DESKTOP-LEG2SE6')
+    pathLoc = 'C:/Users/nshel/Box/BensmaiaLab/';
+elseif strcmpi(hostEnv, 'OBA-PC-01')
+    pathLoc = 'C:/Users/somlab/Box/BensmaiaLab/';
+elseif strcmpi(hostEnv, 'DESKTOP-FB47T9U')
+    pathLoc = 'C:/Users/nshelch/Box/BensmaiaLab (Natalya Shelchkova)/';
+end
+
+dataLoc = fullfile(pathLoc, 'Texture Perception/Data/');
+
+% Load Data
+if exist(fullfile(dataLoc, 'cData.mat'), 'file')
+    load(fullfile(dataLoc, 'cData.mat'))
+    load(fullfile(dataLoc, 'InfoData_2024_2_15.mat'))
+end
+
 neuronType = {cData.neuron(:).type};
 pcIdx = strcmp(neuronType, 'PC'); saIdx = strcmp(neuronType, 'SA');
 
@@ -324,12 +343,15 @@ xlabel('Snippet Length [ms]')
 
 neuronType = {cData.neuron(:).type};
 pcIdx = strcmp(neuronType, 'PC'); saIdx = strcmp(neuronType, 'SA');
+snippetLength = [2:6,8,10]; % ms
+
+pcColor = rgb('DarkOrange');
+saColor = rgb('Green');
 
 for sl = 1:length(snippetLength)
-    scatter(squeeze(miNeural.SpikeCount(sl, pcIdx)), squeeze(miNeural.SpikeIntCount(sl, pcIdx)), sl, rgb('DarkOrange'), "filled")
-
-
-
+    scatter(squeeze(miNeural.SpikeCount(sl, pcIdx)), squeeze(miNeural.SpikeInt(sl, pcIdx)), snippetLength(sl), pcColor, "filled")
+    hold on
+    scatter(squeeze(miNeural.SpikeCount(sl, saIdx)), squeeze(miNeural.SpikeInt(sl, saIdx)), snippetLength(sl), saColor, "filled")
 end
 
 
